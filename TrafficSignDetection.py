@@ -28,43 +28,33 @@ def color_segmentation(image):
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
     # Define adjusted color ranges for segmentation
-    lower_red1 = np.array([0, 50, 50])
+    lower_red1 = np.array([0, 70, 50])
     upper_red1 = np.array([10, 255, 255])
-    lower_red2 = np.array([160, 50, 50])
+    lower_red2 = np.array([170, 70, 50])
     upper_red2 = np.array([180, 255, 255])
-    lower_yellow = np.array([15, 100, 100])
-    upper_yellow = np.array([35, 255, 255])
-    lower_green = np.array([35, 50, 50])
-    upper_green = np.array([85, 255, 255])
     lower_black = np.array([0, 0, 0])
     upper_black = np.array([180, 255, 30])
-    lower_orange = np.array([10, 100, 100])
-    upper_orange = np.array([25, 255, 255])
-    lower_blue = np.array([100, 150, 0])
-    upper_blue = np.array([140, 255, 255])
 
     # Create masks for each color range
     mask_red1 = cv2.inRange(hsv, lower_red1, upper_red1)
     mask_red2 = cv2.inRange(hsv, lower_red2, upper_red2)
-    mask_yellow = cv2.inRange(hsv, lower_yellow, upper_yellow)
-    mask_green = cv2.inRange(hsv, lower_green, upper_green)
     mask_black = cv2.inRange(hsv, lower_black, upper_black)
-    mask_orange = cv2.inRange(hsv, lower_orange, upper_orange)
-    mask_blue = cv2.inRange(hsv, lower_blue, upper_blue)
 
     # Combine masks
     mask = cv2.bitwise_or(mask_red1, mask_red2)
-    mask = cv2.bitwise_or(mask, mask_yellow)
-    mask = cv2.bitwise_or(mask, mask_green)
     mask = cv2.bitwise_or(mask, mask_black)
-    mask = cv2.bitwise_or(mask, mask_orange)
-    mask = cv2.bitwise_or(mask, mask_blue)
+
+    # Debug: Show the mask
+    cv2.imshow("Mask", mask)
 
     return mask
 
 
 def edge_detection(image):
-    edges = cv2.Canny(image, 100, 200)
+    # Adjusting the parameters for Canny edge detection
+    edges = cv2.Canny(image, 50, 150)  # Lowered threshold values
+    # Debug: Show edges
+    cv2.imshow("Edges", edges)
     return edges
 
 
@@ -74,7 +64,7 @@ def template_matching(image, templates):
         template = resize_template_if_needed(image, template)
         w, h = template.shape[::-1]
         res = cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED)
-        threshold = 0.8
+        threshold = 0.6  # Lowered threshold value
         loc = np.where(res >= threshold)
         for pt in zip(*loc[::-1]):
             cv2.rectangle(matched, pt, (pt[0] + w, pt[1] + h), (0, 255, 0), 2)
@@ -90,6 +80,10 @@ def shape_analysis(image):
     return image
 
 
+def resize_image(image, size=(640, 480)):
+    return cv2.resize(image, size, interpolation=cv2.INTER_AREA)
+
+
 def process_image(window, root, templates):
     file_path = filedialog.askopenfilename()
     if not file_path:
@@ -102,7 +96,8 @@ def process_image(window, root, templates):
     edges = edge_detection(segmented)
     matched = template_matching(edges, templates)
     analyzed = shape_analysis(matched)
-    cv2.imshow('Processed Image', analyzed)
+    resized_analyzed = resize_image(analyzed)  # Resize the processed image
+    cv2.imshow('Processed Image', resized_analyzed)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     window.destroy()
@@ -125,7 +120,8 @@ def process_video(window, flag, root, templates):
         edges = edge_detection(segmented)
         matched = template_matching(edges, templates)
         analyzed = shape_analysis(matched)
-        cv2.imshow('Processed Video', analyzed)
+        resized_analyzed = resize_image(analyzed)  # Resize the processed image
+        cv2.imshow('Processed Video', resized_analyzed)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     cap.release()
@@ -149,11 +145,12 @@ def real_time_processing(window, flag, root, templates):
         edges = edge_detection(segmented)
         matched = template_matching(edges, templates)
         analyzed = shape_analysis(matched)
+        resized_analyzed = resize_image(analyzed)  # Resize the processed image
 
         # Display FPS on frame
-        cv2.putText(analyzed, f"FPS: {fps:.2f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+        cv2.putText(resized_analyzed, f"FPS: {fps:.2f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
 
-        cv2.imshow('Real-Time Processing', analyzed)
+        cv2.imshow('Real-Time Processing', resized_analyzed)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     cap.release()
