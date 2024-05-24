@@ -6,13 +6,17 @@ import os
 import time
 
 
-# Function to load templates
+# Function to load templates from a directory
 def load_templates(template_dir):
     templates = []
     for filename in os.listdir(template_dir):
         if filename.endswith(".png") or filename.endswith(".jpg"):
             template = cv2.imread(os.path.join(template_dir, filename), 0)  # Load in grayscale
-            templates.append(template)
+            if template is not None:
+                templates.append(template)
+                print(f"Loaded template: {filename}")
+            else:
+                print(f"Failed to load template: {filename}")
     return templates
 
 
@@ -45,7 +49,7 @@ def color_segmentation(image):
     mask = cv2.bitwise_or(mask, mask_black)
 
     # Debug: Show the mask
-    cv2.imshow("Mask", mask)
+    # cv2.imshow("Mask", mask)
 
     return mask
 
@@ -54,7 +58,7 @@ def edge_detection(image):
     # Adjusting the parameters for Canny edge detection
     edges = cv2.Canny(image, 50, 150)  # Lowered threshold values
     # Debug: Show edges
-    cv2.imshow("Edges", edges)
+    # cv2.imshow("Edges", edges)
     return edges
 
 
@@ -67,20 +71,25 @@ def template_matching(image, templates):
         threshold = 0.6  # Lowered threshold value
         loc = np.where(res >= threshold)
         for pt in zip(*loc[::-1]):
-            cv2.rectangle(matched, pt, (pt[0] + w, pt[1] + h), (0, 255, 0), 2)
+            print(f"Match found at: {pt}, Size: ({w}, {h})")  # Debug: Print match location and size
     return matched
 
 
 def shape_analysis(image):
     contours, _ = cv2.findContours(image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     for cnt in contours:
-        approx = cv2.approxPolyDP(cnt, 0.02 * cv2.arcLength(cnt, True), True)
-        if len(approx) == 8:
-            cv2.drawContours(image, [approx], 0, (0, 0, 255), 5)
+        # Adjusting the approximation parameter
+        approx = cv2.approxPolyDP(cnt, 0.07 * cv2.arcLength(cnt, True), True)
+        area = cv2.contourArea(cnt)
+
+        # Adding conditions to retain important shapes
+        if len(approx) >= 5 and area > 100:  # Example conditions
+            cv2.drawContours(image, [approx], 0, (0, 0, 255), 2)
+
     return image
 
 
-def resize_image(image, size=(640, 480)):
+def resize_image(image, size=(800, 600)):
     return cv2.resize(image, size, interpolation=cv2.INTER_AREA)
 
 
@@ -213,6 +222,7 @@ def create_gui():
     root.title("Traffic Sign Detection and Recognition")
 
     templates = load_templates("templates/")
+    print(f"Total templates loaded: {len(templates)}")
 
     Label(root, text="Traffic Sign Detection and Recognition").pack()
     Button(root, text="Process Image", command=lambda: open_image_processing(root, templates)).pack()
