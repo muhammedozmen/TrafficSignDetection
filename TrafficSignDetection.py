@@ -6,12 +6,12 @@ import os
 import time
 
 
-# Function to load templates from a directory
+# Function to load templates from a directory to understand they are uploaded correctly or not
 def load_templates(template_dir):
     templates = []
     for filename in os.listdir(template_dir):
         if filename.endswith(".png") or filename.endswith(".jpg"):
-            template = cv2.imread(os.path.join(template_dir, filename), 0)  # Load in grayscale
+            template = cv2.imread(os.path.join(template_dir, filename), 0)
             if template is not None:
                 templates.append(template)
                 print(f"Loaded template: {filename}")
@@ -39,16 +39,16 @@ def color_segmentation(image):
     lower_black = np.array([0, 0, 0])
     upper_black = np.array([180, 255, 30])
 
-    # Create masks for each color range
+    # Create a mask each color range
     mask_red1 = cv2.inRange(hsv, lower_red1, upper_red1)
     mask_red2 = cv2.inRange(hsv, lower_red2, upper_red2)
     mask_black = cv2.inRange(hsv, lower_black, upper_black)
 
-    # Combine masks
+    # Combine the segmentation masks
     mask = cv2.bitwise_or(mask_red1, mask_red2)
     mask = cv2.bitwise_or(mask, mask_black)
 
-    # Debug: Show the mask
+    # Debug to show the mask whether works well or not
     # cv2.imshow("Mask", mask)
 
     return mask
@@ -56,9 +56,11 @@ def color_segmentation(image):
 
 def edge_detection(image):
     # Adjusting the parameters for Canny edge detection
-    edges = cv2.Canny(image, 50, 150)  # Lowered threshold values
-    # Debug: Show edges
+    edges = cv2.Canny(image, 50, 150)
+
+    # Debug to show the edges whether it works correctly or not
     # cv2.imshow("Edges", edges)
+
     return edges
 
 
@@ -68,10 +70,13 @@ def template_matching(image, templates):
         template = resize_template_if_needed(image, template)
         w, h = template.shape[::-1]
         res = cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED)
-        threshold = 0.6  # Lowered threshold value
+        threshold = 0.6
         loc = np.where(res >= threshold)
+
+        # Debug to print match location and size whether it works correctly or not
         for pt in zip(*loc[::-1]):
-            print(f"Match found at: {pt}, Size: ({w}, {h})")  # Debug: Print match location and size
+            print(f"Match found at: {pt}, Size: ({w}, {h})")
+
     return matched
 
 
@@ -83,7 +88,7 @@ def shape_analysis(image):
         area = cv2.contourArea(cnt)
 
         # Adding conditions to retain important shapes
-        if len(approx) >= 5 and area > 100:  # Example conditions
+        if len(approx) >= 5 and area > 100:
             cv2.drawContours(image, [approx], 0, (0, 0, 255), 2)
 
     return image
@@ -105,7 +110,7 @@ def process_image(window, root, templates):
     edges = edge_detection(segmented)
     matched = template_matching(edges, templates)
     analyzed = shape_analysis(matched)
-    resized_analyzed = resize_image(analyzed)  # Resize the processed image
+    resized_analyzed = resize_image(analyzed)
     cv2.imshow('Processed Image', resized_analyzed)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
@@ -129,7 +134,7 @@ def process_video(window, flag, root, templates):
         edges = edge_detection(segmented)
         matched = template_matching(edges, templates)
         analyzed = shape_analysis(matched)
-        resized_analyzed = resize_image(analyzed)  # Resize the processed image
+        resized_analyzed = resize_image(analyzed)
         cv2.imshow('Processed Video', resized_analyzed)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
@@ -154,9 +159,9 @@ def real_time_processing(window, flag, root, templates):
         edges = edge_detection(segmented)
         matched = template_matching(edges, templates)
         analyzed = shape_analysis(matched)
-        resized_analyzed = resize_image(analyzed)  # Resize the processed image
+        resized_analyzed = resize_image(analyzed)
 
-        # Display FPS on frame
+        # Show FPS on the screen
         cv2.putText(resized_analyzed, f"FPS: {fps:.2f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
 
         cv2.imshow('Real-Time Processing', resized_analyzed)
@@ -167,6 +172,8 @@ def real_time_processing(window, flag, root, templates):
     window.destroy()
     root.deiconify()
 
+
+### GUI features
 
 def start_real_time_processing(window, root, templates):
     flag = [True]
